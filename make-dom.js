@@ -7,6 +7,7 @@ const d3 = require("d3-selection"),
 const {html} = makeDom(JSON.parse(fs.readFileSync(path.normalize(__dirname + "/data/elb-2020-01-21.json"), "utf8")))
 fs.writeFileSync(path.normalize(__dirname + "/html/index.html"), html);
 
+// A function to make the newsletter HTML from the JSON
 function makeDom(json){
   const { JSDOM } = jsdom;
   const dom = new JSDOM(`<!DOCTYPE html>`);

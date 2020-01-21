@@ -9,11 +9,13 @@ const scrape = require("jquery-scrape"),
 
 require("./utils/rateLimit");
 
+// Get the RSS feed
 scrape("http://electionlawblog.org/?feed=rss2", $ => {
   const lastBuildDate = new Date($("lastBuildDate").html());
-  const filename = makeFilename(lastBuildDate);
   const json = [];
   const items = $("item");
+
+  // Convert all items to JSON
   items.each((itemIndex, item) => {
     const obj = {
       title: extractText("title"),
@@ -28,9 +30,6 @@ scrape("http://electionlawblog.org/?feed=rss2", $ => {
     function extractText(el){
       return $(item).find(el).text().trim();
     }
-    function extractHtml(el){
-      return $(item).find(el).html();
-    }
   });
 
   const visitPageLimited = _.rateLimit(visitPage, 1000);
@@ -38,24 +37,28 @@ scrape("http://electionlawblog.org/?feed=rss2", $ => {
 
   console.log(`Found ${json.length} items`);
 
+  // Loop through the JSON to fill out
+  // each item's content
   json.forEach(visitPageLimited);
 
   function visitPage(obj, index){
     scrape(obj.link, $ => {
+
+      // Fill in the rest of each item's information
       obj.pubTime = $(".meta-info-wrap").find("time").text().trim();
       obj.author = $(".meta-info-wrap").find(".author.vcard").text().trim();
       obj.content = $(".entry-content.cf").html();
 
       visitCount++;
       process.stdout.write(`\rRetrieved item ${visitCount}`);
+
+      // Once we've scraped all items, we'll send an email
       if (visitCount === json.length){
         console.log(`\nRetrieved ${visitCount} items`);
-        console.log("Writing backup file " + filename);
-        fs.writeFileSync(path.normalize(__dirname + filename), JSON.stringify(json));
         console.log("Creating DOM");
         const { html, text, } = makeDom(json);
 
-        // create reusable transporter object using the default SMTP transport
+        // Create reusable transporter object using the default SMTP transport
         let transporter = nodemailer.createTransport({
           service: "gmail",
           auth: {
@@ -64,7 +67,7 @@ scrape("http://electionlawblog.org/?feed=rss2", $ => {
           }
         });
 
-        // send mail with defined transport object
+        // Send mail with defined transport object
         transporter.sendMail({
           from: `"Mr. Newsletter" <${process.env.SENDER_NAME}>`, // sender address
           to: `${process.env.RECIPIENT_NAME}`, // list of receivers
@@ -80,21 +83,12 @@ scrape("http://electionlawblog.org/?feed=rss2", $ => {
           console.log("Message sent: %s", info.messageId);
         });
 
-
       }
     });
   }
 
 });
 
-
 function datesEqual(dateA, dateB){
   return dateA.getFullYear() === dateB.getFullYear() && dateA.getMonth() === dateB.getMonth() && dateA.getDate() === dateB.getDate();
-}
-function makeFilename(d){
-  return `/data/elb-${d.getFullYear()}-${padTwo(d.getMonth() + 1)}-${padTwo(d.getDate())}.json`;
-}
-function padTwo(n){
-  const s = n.toString();
-  return s.length === 1 ? "0" + s : s;
 }
