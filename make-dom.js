@@ -54,7 +54,8 @@ function makeDom(json){
       .attr("class", "item-link")
       .html(d => `Permalink: <a href="${d.link}">${d.link}</a>`);
 
-  item.append("hr");
+  item.append("hr")
+      .style("display", (d, i, e) => i === e.length - 1 ? "none" : "block");
 
   return {html: `<!DOCTYPE html><html>${parseBody(doc.select("html").html())}</html>`, text: parseBody(doc.select("body").text())};
 }
