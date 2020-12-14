@@ -1,5 +1,9 @@
 html {
-  background: white;  
+  background: white;
+}
+img {
+  max-width: 100%;
+  height: auto;
 }
 .nl-html {
   margin: 0 auto;
